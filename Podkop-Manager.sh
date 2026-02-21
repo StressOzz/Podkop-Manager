@@ -62,6 +62,7 @@ install_pkg "luci-i18n-amneziawg-ru" >/dev/null 2>&1 || echo -e "${RED}Вним�
 rm -rf "$AWG_DIR"
 echo -e "${YELLOW}Перезапускаем сеть! Подождите...${NC}"
 /etc/init.d/network restart >/dev/null 2>&1
+sleep 5
 echo -e "AmneziaWG ${GREEN}установлен!${NC}"
 
 echo -e "${MAGENTA}Устанавливаем интерфейс AWG${NC}"
@@ -80,9 +81,12 @@ commit network
 EOF
 fi
 echo -e "${CYAN}Перезапускаем сеть${NC}"
+
 /etc/init.d/network restart
-/etc/init.d/firewall restart
-/etc/init.d/uhttpd restart
+sleep 5
+# /etc/init.d/firewall restart
+# /etc/init.d/uhttpd restart
+
 echo -e "${GREEN}Интерфейс ${NC}$IF_NAME${GREEN} создан и активирован!${NC}"
 echo -e "${YELLOW}Вставьте рабочий конфиг в Interfaces (Интерфейс) AWG!${NC}\n"
 read -p "Нажмите Enter..." dummy
