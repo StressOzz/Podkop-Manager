@@ -126,7 +126,7 @@ integration_AWG() {
 
 echo -e "\n${MAGENTA}Интегрируем AWG в Podkop${NC}"
 
-if ! command -v amneziawg-tools >/dev/null 2>&1 && [ ! -f /etc/init.d/byedpi ]; then
+if ! awg --version >/dev/null 2>&1; then
 echo -e "\n${RED}AWG не установлен!${NC}"
 PAUSE
 return
@@ -251,7 +251,6 @@ fi
 BYEDPI_FILE="byedpi_${BYEDPI_VER}-r1_${LOCAL_ARCH}.${PKG_EXT}"
 BYEDPI_URL="https://github.com/DPITrickster/ByeDPI-OpenWrt/releases/download/${RELEASE_TAG}/${BYEDPI_FILE}"
 
-echo -e "${GREEN}Архитектура: ${NC}$LOCAL_ARCH${NC}"
 echo -e "${CYAN}Скачиваем ${NC}$BYEDPI_FILE${NC}"
 
 cd "$tmpDIR" || return
@@ -271,9 +270,9 @@ $INSTALL_CMD "$BYEDPI_FILE" >/dev/null 2>&1
 if [ -f /etc/init.d/byedpi ]; then
 /etc/init.d/byedpi enable >/dev/null 2>&1
 /etc/init.d/byedpi start >/dev/null 2>&1
-echo -e "ByeDPI ${GREEN}установлен!${NC}\n"
+echo -e "ByeDPI ${GREEN}установлен!${NC}"
 else
-echo -e "${RED}Сервис byedpi не найден!${NC}"
+echo -e "\n${RED}Сервис byedpi не найден!${NC}"
 fi
 
 PAUSE
@@ -567,7 +566,7 @@ PAUSE
 # ==========================================
 uninstall_AWG() {
 echo -e "\n${MAGENTA}Удаление AWG и интерфейс AWG${NC}"
-
+echo -e "${CYAN}Удаляем ${NC}AWG"
 pkg_remove luci-i18n-amneziawg-ru
 pkg_remove luci-proto-amneziawg
 pkg_remove amneziawg-tools
