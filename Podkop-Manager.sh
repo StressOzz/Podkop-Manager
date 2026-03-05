@@ -19,10 +19,8 @@ WORKDIR="/tmp/byedpi"
 
 PODKOP_LATEST_VER="0.7.14"
 
-BYEDPI_VER="0.17.3-r1"
+BYEDPI_VER="0.17.3"
 BYEDPI_ARCH="$LOCAL_ARCH"
-BYEDPI_FILE="byedpi_${BYEDPI_VER}_${BYEDPI_ARCH}.ipk"
-BYEDPI_URL="https://github.com/DPITrickster/ByeDPI-OpenWrt/releases/download/v0.17.3-24.10/${BYEDPI_FILE}"
 
 if command -v apk >/dev/null 2>&1; then
     PKG_IS_APK=1
@@ -32,23 +30,23 @@ else
     PKG_MANAGER="opkg list-installed 2>/dev/null"
 fi
 
+PAUSE() { echo -ne "\nНажмите Enter..."; read dummy; }
 
 pkg_remove() { local pkg_name="$1"; if [ "$PKG_IS_APK" -eq 1 ]; then apk del "$pkg_name" >/dev/null 2>&1 || true; else opkg remove --force-depends "$pkg_name" >/dev/null 2>&1 || true; fi; }
-
 
 # ==========================================
 # AWG
 # ==========================================
 install_AWG() {
 
-echo -e "\n${MAGENTA}Устанавливаем AWG + интерфейс${NC}"
+echo -e "\n${MAGENTA}Устанавливаем AWG${NC}"
 
 VERSION=$(ubus call system board | jsonfilter -e '@.release.version' | tr -d '\n')
 MAJOR_VERSION=$(echo "$VERSION" | cut -d '.' -f1)
 
 if [ -z "$VERSION" ]; then
-    echo -e "\n${RED}Не удалось определить версию OpenWrt!${NC}\n"
-    read -p "Нажмите Enter..." dummy
+    echo -e "\n${RED}Не удалось определить версию OpenWrt!${NC}"
+PAUSE
     return
 fi
 
@@ -69,35 +67,29 @@ install_pkg() {
     if wget -O "$AWG_DIR/$filename" "$url" >/dev/null 2>&1; then
         echo -e "${CYAN}Устанавливаем:${NC} $pkgname"
         if ! $INSTALL_CMD "$AWG_DIR/$filename" >/dev/null 2>&1; then
-            echo -e "\n${RED}Ошибка установки $pkgname!${NC}\n"
-            read -p "Нажмите Enter..." dummy
+            echo -e "\n${RED}Ошибка установки $pkgname!${NC}"
+PAUSE
             return 1
         fi
     else
-        echo -e "\n${RED}Ошибка! Не удалось скачать $filename${NC}\n"
-        read -p "Нажмите Enter..." dummy
+        echo -e "\n${RED}Ошибка! Не удалось скачать $filename${NC}"
+PAUSE
         return 1
     fi
 }
 
-# --- OpenWrt 25+ (apk) ---
 if [ "$MAJOR_VERSION" -ge 25 ] 2>/dev/null; then
-
-    echo -e "${GREEN}Обнаружен OpenWrt $VERSION (apk)${NC}"
 
     PKGARCH=$(cat /etc/apk/arch)
     PKGPOSTFIX="_v${VERSION}_${PKGARCH}_${TARGET}_${SUBTARGET}.apk"
     INSTALL_CMD="apk add --allow-untrusted"
 
-# --- OpenWrt 24 и ниже (opkg) ---
 else
-
-    echo -e "${GREEN}Обнаружен OpenWrt $VERSION (opkg)${NC}"
 
     echo -e "${GREEN}Обновляем список пакетов${NC}"
     opkg update >/dev/null 2>&1 || {
-        echo -e "\n${RED}Ошибка при обновлении списка пакетов!${NC}\n"
-        read -p "Нажмите Enter..." dummy
+        echo -e "\n${RED}Ошибка при обновлении списка пакетов!${NC}"
+PAUSE
         return
     }
 
@@ -107,12 +99,10 @@ else
 
 fi
 
-# --- установка пакетов ---
 install_pkg "kmod-amneziawg"
 install_pkg "amneziawg-tools"
 install_pkg "luci-proto-amneziawg"
-install_pkg "luci-i18n-amneziawg-ru" >/dev/null 2>&1 || \
-    echo -e "${RED}Внимание: русская локализация не установлена (не критично)${NC}"
+install_pkg "luci-i18n-amneziawg-ru"
 
 rm -rf "$AWG_DIR"
 
@@ -121,11 +111,11 @@ echo -e "${YELLOW}Перезапускаем сеть! Подождите...${NC
 sleep 5
 
 echo -e "\nAmneziaWG ${GREEN}установлен!${NC}\n"
-echo -e "${GREEN}Создайте интерфейс ${NC}AWG${GREEN} в ${NC}LuCI${GREEN}!${NC}\n"
-echo -e "${YELLOW}Вставьте в него рабочий конфиг!${NC}\n"
-read -p "Нажмите Enter..." dummy
+echo -e "${YELLOW}Необходимо создать интерфейс в LuCI:${NC}\nNetwork ${GREEN}→${NC} Interfaces ${GREEN}→${NC} Add new interface... ${GREEN}→${NC} Name:AWG ${GREEN}→${NC} Protocol:AmneziaWG VPN ${GREEN}→${NC} Create interface${NC}"
+echo -e "${YELLOW}Необходимо загрузить конфиг в интерфейс AWG в LuCI:${NC}\nNetwork ${GREEN}→${NC} Interfaces ${GREEN}→${NC} AWG ${GREEN}→${NC} Edit ${GREEN}→${NC} Load configuration…${NC}"
+PAUSE
 }
-
+GREEN
 # ==========================================
 # Интеграция AWG
 # ==========================================
@@ -133,7 +123,7 @@ integration_AWG() {
 
 echo -e "\n${MAGENTA}Интегрируем AWG в Podkop${NC}"
 
-echo -e "${GREEN}Меняем конфигурацию в ${NC}Podkop${GREEN}...${NC}"
+echo -e "${GREEN}Меняем конфигурацию в ${NC}Podkop${NC}"
     # Создаём / меняем /etc/config/podkop
     cat <<EOF >/etc/config/podkop
 config settings 'settings'
@@ -165,7 +155,7 @@ config section 'main'
 	list community_lists 'hodca'
 EOF
 
-echo -e "AWG ${GREEN}интегрирован в ${NC}Podkop${GREEN}.${NC}"
+echo -e "AWG ${GREEN}интегрирован в ${NC}Podkop${NC}"
 echo -e "${CYAN}Запускаем ${NC}Podkop${NC}"
 podkop enable >/dev/null 2>&1
 echo -e "${CYAN}Применяем конфигурацию${NC}"
@@ -176,7 +166,9 @@ podkop list_update >/dev/null 2>&1
 echo -e "${CYAN}Перезапускаем сервис${NC}"
 podkop restart >/dev/null 2>&1
 echo -e "Podkop ${GREEN}готов к работе!${NC}\n"
-read -p "Нажмите Enter..." dummy
+echo -e "${YELLOW}Необходимо создать интерфейс в LuCI:${NC}\nNetwork ${GREEN}→${NC} Interfaces ${GREEN}→${NC} Add new interface... ${GREEN}→${NC} Name:AWG ${GREEN}→${NC} Protocol:AmneziaWG VPN ${GREEN}→${NC} Create interface${NC}"
+echo -e "${YELLOW}Необходимо загрузить конфиг в интерфейс AWG в LuCI:${NC}\nNetwork ${GREEN}→${NC} Interfaces ${GREEN}→${NC} AWG ${GREEN}→${NC} Edit ${GREEN}→${NC} Load configuration…${NC}"
+PAUSE
 }
 
 # ==========================================
@@ -238,30 +230,59 @@ fi
 install_ByeDPI() {
     echo -e "\n${MAGENTA}Установка ByeDPI${NC}"
 
-    BYEDPI_VER="0.17.3-r1"
-    BYEDPI_ARCH="$LOCAL_ARCH"
-    BYEDPI_FILE="byedpi_${BYEDPI_VER}_${BYEDPI_ARCH}.ipk"
-    BYEDPI_URL="https://github.com/DPITrickster/ByeDPI-OpenWrt/releases/download/v0.17.3-24.10/${BYEDPI_FILE}"
-
+    BYEDPI_VER="0.17.3"
+    
+    # Определяем версию OpenWrt и соответствующий URL
+    if command -v apk >/dev/null 2>&1; then
+        OPENWRT_VER="25"
+        PKG_EXT="apk"
+        RELEASE_TAG="v${BYEDPI_VER}-v25.12.0"
+        INSTALL_CMD="apk add --allow-untrusted"
+    else
+        OPENWRT_VER="24"
+        PKG_EXT="ipk"
+        RELEASE_TAG="v${BYEDPI_VER}-24.10"
+        INSTALL_CMD="opkg install --force-reinstall"
+    fi
+    
+    BYEDPI_FILE="byedpi_${BYEDPI_VER}-r1_${LOCAL_ARCH}.${PKG_EXT}"
+    BYEDPI_URL="https://github.com/DPITrickster/ByeDPI-OpenWrt/releases/download/${RELEASE_TAG}/${BYEDPI_FILE}"
+    
+    echo -e "${GREEN}Архитектура: ${NC}${WHITE}$LOCAL_ARCH${NC}"
     echo -e "${GREEN}Скачиваем ${NC}${WHITE}$BYEDPI_FILE${NC}"
+    
     mkdir -p "$WORKDIR"
     cd "$WORKDIR" || return
-
+    
+    # Скачиваем файл
     wget -q -U "Mozilla/5.0" -O "$BYEDPI_FILE" "$BYEDPI_URL" || {
         echo -e "${RED}Ошибка загрузки ${NC}$BYEDPI_FILE"
-        read -p "Нажмите Enter..." dummy
+        echo -e "${YELLOW}URL: $BYEDPI_URL${NC}"
+PAUSE
         return
     }
-
+    
     echo -e "${GREEN}Устанавливаем${NC} ${WHITE}$BYEDPI_FILE${NC}"
-    opkg install --force-reinstall "$BYEDPI_FILE" >/dev/null 2>&1
-
+    $INSTALL_CMD "$BYEDPI_FILE" >/dev/null 2>&1
+    
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}Пакет успешно установлен${NC}"
+    else
+        echo -e "${RED}Ошибка установки пакета${NC}"
+    fi
+    
     rm -rf "$WORKDIR"
-    /etc/init.d/byedpi enable >/dev/null 2>&1
-    /etc/init.d/byedpi start >/dev/null 2>&1
-
-    echo -e "ByeDPI ${GREEN}успешно установлен!${NC}\n"
-    read -p "Нажмите Enter..." dummy
+    
+    # Запускаем сервис
+    if [ -f /etc/init.d/byedpi ]; then
+        /etc/init.d/byedpi enable >/dev/null 2>&1
+        /etc/init.d/byedpi start >/dev/null 2>&1
+        echo -e "ByeDPI ${GREEN}успешно установлен!${NC}\n"
+    else
+        echo -e "${YELLOW}Сервис byedpi не найден. Проверьте установку.${NC}"
+    fi
+    
+PAUSE
 }
 
 # ==========================================
@@ -271,11 +292,13 @@ uninstall_byedpi() {
     echo -e "\n${MAGENTA}Удаление ByeDPI${NC}"
 /etc/init.d/byedpi stop >/dev/null 2>&1
 /etc/init.d/byedpi disable >/dev/null 2>&1
-opkg remove --force-removal-of-dependent-packages byedpi >/dev/null 2>&1
+
+pkg_remove byedpi
+
 uci delete dhcp.@dnsmasq[0].localuse >/dev/null 2>&1; uci commit dhcp >/dev/null 2>&1; /etc/init.d/dnsmasq restart >/dev/null 2>&1
 rm -rf /etc/init.d/byedpi /opt/byedpi /etc/config/byedpi
-    echo -e "${GREEN}ByeDPI удалён!${NC}\n"
-    read -p "Нажмите Enter..." dummy
+echo -e "${GREEN}ByeDPI удалён!${NC}"
+PAUSE
 }
 
 # ==========================================
@@ -312,7 +335,7 @@ install_podkop() {
 
     pkg_remove() {
         local pkg_name="$1"
-        msg "Удаляем" "$pkg_name..."
+        msg "Удаляем" "$pkg_name"
         if [ "$PKG_IS_APK" -eq 1 ]; then
             apk del "$pkg_name" >/dev/null 2>&1
         else
@@ -321,7 +344,7 @@ install_podkop() {
     }
 
     pkg_list_update() {
-        msg "Обновляем список пакетов..."
+        msg "Обновляем список пакетов"
         if [ "$PKG_IS_APK" -eq 1 ]; then
             apk update >/dev/null 2>&1
         else
@@ -346,15 +369,13 @@ install_podkop() {
 	
 [ "$AVAILABLE_SPACE" -lt "$REQUIRED_SPACE" ] && { 
     msg "Недостаточно свободного места"
-    echo ""
-    read -p "Нажмите Enter..." dummy
+	PAUSE
     return
 }
 
 nslookup google.com >/dev/null 2>&1 || { 
     msg "DNS не работает"
-    echo ""
-    read -p "Нажмите Enter..." dummy
+	PAUSE
     return
 }
 
@@ -381,13 +402,10 @@ nslookup google.com >/dev/null 2>&1 || {
 
 pkg_list_update || { 
     msg "Не удалось обновить список пакетов"
-    echo ""
-    read -p "Нажмите Enter..." dummy
+	PAUSE
     return
 }
 
-
-    # Шаблон скачивания
     if [ "$PKG_IS_APK" -eq 1 ]; then
         grep_url_pattern='https://[^"[:space:]]*\.apk'
     else
@@ -409,8 +427,7 @@ pkg_list_update || {
 
 [ $download_success -eq 0 ] && { 
     msg "Нет успешно скачанных пакетов"
-    echo ""
-    read -p "Нажмите Enter..." dummy
+	PAUSE
     return
 }
 
@@ -420,11 +437,10 @@ pkg_list_update || {
         [ -n "$file" ] && pkg_install "$DOWNLOAD_DIR/$file"
     done
 
-    # Русский интерфейс
     ru=$(ls "$DOWNLOAD_DIR" | grep "luci-i18n-podkop-ru" | head -n 1)
     if [ -n "$ru" ]; then
         if pkg_is_installed luci-i18n-podkop-ru; then
-            msg "Обновляем русский язык..." "$ru"
+            msg "Обновляем русский язык" "$ru"
             pkg_remove luci-i18n-podkop* >/dev/null 2>&1
             pkg_install "$DOWNLOAD_DIR/$ru"
         else
@@ -436,8 +452,8 @@ pkg_list_update || {
     # Очистка
     rm -rf "$DOWNLOAD_DIR"
 
-    echo -e "Podkop ${GREEN}успешно установлен!${NC}\n"
-    read -p "Нажмите Enter..." dummy
+    echo -e "Podkop ${GREEN}успешно установлен!${NC}"
+PAUSE
 }
 
 # ==========================================
@@ -448,22 +464,22 @@ integration_byedpi_podkop() {
 
 	# Проверяем установлен ли ByeDPI
     if ! command -v byedpi >/dev/null 2>&1 && [ ! -f /etc/init.d/byedpi ]; then
-		echo -e "${YELLOW}ByeDPI не установлен.${NC}\n"
-        read -p "Нажмите Enter..." dummy
+		echo -e "${RED}ByeDPI не установлен!${NC}"
+PAUSE
         return
     fi
-	echo -e "${GREEN}Отключаем локальный ${NC}DNS${GREEN}...${NC}"
+	echo -e "${GREEN}Отключаем локальный ${NC}DNS"
 	uci set dhcp.@dnsmasq[0].localuse='0'
     uci commit dhcp
-	echo -e "${GREEN}Перезапускаем ${NC}dnsmasq${GREEN}...${NC}"
+	echo -e "${GREEN}Перезапускаем ${NC}dnsmasq"
 	/etc/init.d/dnsmasq restart >/dev/null 2>&1
 
     # Меняем стратегию ByeDPI на интеграционную
-	echo -e "${GREEN}Меняем стратегию ${NC}ByeDPI${GREEN} на рабочую...${NC}"
+	echo -e "${GREEN}Меняем стратегию ${NC}ByeDPI${GREEN} на рабочую${NC}"
     if [ -f /etc/config/byedpi ]; then
         sed -i "s|option cmd_opts .*| option cmd_opts '-o2 --auto=t,r,a,s -d2'|" /etc/config/byedpi
     fi
-echo -e "${GREEN}Меняем конфигурацию в ${NC}Podkop${GREEN}...${NC}"
+echo -e "${GREEN}Меняем конфигурацию в ${NC}Podkop"
     # Создаём / меняем /etc/config/podkop
     cat <<EOF >/etc/config/podkop
 config settings 'settings'
@@ -499,33 +515,34 @@ config section 'main'
 	list community_lists 'youtube'
 EOF
 
-    echo -e "${GREEN}Запуск ${NC}ByeDPI${GREEN}...${NC}"
+    echo -e "${GREEN}Запуск ${NC}ByeDPI"
     /etc/init.d/byedpi enable >/dev/null 2>&1
     /etc/init.d/byedpi start >/dev/null 2>&1
-	echo -e "${GREEN}Запуск ${NC}Podkop${GREEN}...${NC}"
+	echo -e "${GREEN}Запуск ${NC}Podkop"
     podkop enable >/dev/null 2>&1
-    echo -e "${GREEN}Применяем конфигурацию...${NC}"
+    echo -e "${GREEN}Применяем конфигурацию${NC}"
     podkop reload >/dev/null 2>&1
-    echo -e "${GREEN}Перезапускаем сервис...${NC}"
+    echo -e "${GREEN}Перезапускаем сервис${NC}"
     podkop restart >/dev/null 2>&1
-    echo -e "${GREEN}Обновляем списки...${NC}"
+    echo -e "${GREEN}Обновляем списки${NC}"
     podkop list_update >/dev/null 2>&1
 
     echo -e "Podkop ${GREEN}готов к работе.${NC}"
 
     echo -e "ByeDPI ${GREEN}интегрирован в ${NC}Podkop${GREEN}.${NC}"
-    echo -ne "\nНужно ${RED}обязательно${NC} перезагрузить роутер. Перезагрузить сейчас? [y/N]: \n"
+    echo -ne "\nНужно ${RED}обязательно${NC} перезагрузить роутер.\nПерезагрузить сейчас? [y/N]: "
     read REBOOT_CHOICE
     case "$REBOOT_CHOICE" in
 	y|Y)
 
-        echo -e "\n${GREEN}Перезагрузка роутера...${NC}"
+        echo -e "\n${GREEN}Перезагрузка роутера!${NC}"
         sleep 1
         reboot
+		exit
         ;;
     *)
-        echo -e "${YELLOW}Перезагрузка отложена.${NC}\n"
-		read -p "Нажмите Enter..." dummy
+        echo -e "${YELLOW}Перезагрузка отложена!${NC}"
+PAUSE
         ;;
 esac
 }
@@ -546,17 +563,17 @@ fix_strategy() {
 		read NEW_STRATEGY
         echo
         if [ -z "$NEW_STRATEGY" ]; then
-            echo -e "${GREEN}Стратегия не изменена.${NC}\n"
+            echo -e "${GREEN}Стратегия не изменена!${NC}"
         else
             sed -i "s|option cmd_opts .*| option cmd_opts '$NEW_STRATEGY'|" /etc/config/byedpi
 			/etc/init.d/byedpi enable >/dev/null 2>&1
 			/etc/init.d/byedpi start >/dev/null 2>&1
-            echo -e "${GREEN}Стратегия изменена на:${NC} ${WHITE}$NEW_STRATEGY${NC}\n"
+            echo -e "${GREEN}Стратегия изменена на:${NC} ${WHITE}$NEW_STRATEGY${NC}"
         fi
     else
-        echo -e "\n${YELLOW}ByeDPI не установлен.${NC}\n"
+        echo -e "\n${RED}ByeDPI не установлен.${NC}"
     fi
-    read -p "Нажмите Enter..." dummy
+PAUSE
 }
 
 # ==========================================
@@ -565,42 +582,30 @@ fix_strategy() {
 uninstall_podkop() {
     echo -e "\n${MAGENTA}Удаление Podkop${NC}"
     
-    # Удаляем пакеты
 pkg_remove luci-i18n-podkop-ru
 pkg_remove luci-app-podkop podkop
 pkg_remove podkop
 
-    # Удаляем конфиги и временные папки
     rm -rf /etc/config/podkop /tmp/podkop_installer
-
-    # Удаляем все файлы в /etc/config с именем содержащим podkop
     rm -f /etc/config/*podkop* >/dev/null 2>&1
 
-    echo -e "Podkop ${GREEN}удалён полностью.${NC}\n"
-    read -p "Нажмите Enter..." dummy
+    echo -e "Podkop ${GREEN}удалён!${NC}"
+PAUSE
 }
-
-
 
 # ==========================================
 # uninstall_AWG
 # ==========================================
 uninstall_AWG() {
-echo -e "\n${MAGENTA}Удаление AWG + интерфейс${NC}"
-opkg remove --force-removal-of-dependent-packages luci-i18n-amneziawg-ru luci-proto-amneziawg amneziawg-tools kmod-amneziawg >/dev/null 2>&1
+echo -e "\n${MAGENTA}Удаление AWG${NC}"
 
 pkg_remove luci-i18n-amneziawg-ru
 pkg_remove luci-proto-amneziawg
 pkg_remove amneziawg-tools
 pkg_remove kmod-amneziawg
 
-echo -e "AWG ${GREEN}удалён.${NC}"
-echo -e "${MAGENTA}Удаляем интерфейс AWG${NC}"
-uci -q delete network.AWG
-uci commit network
-/etc/init.d/network reload >/dev/null 2>&1
-echo -e "AWG ${GREEN}удалён.${NC}\n"
-read -p "Нажмите Enter..." dummy
+echo -e "AWG ${GREEN}удалён!${NC}"
+PAUSE
 }
 
 # ==========================================
@@ -621,7 +626,7 @@ fi
 	echo -e "╔═══════════════════════════════╗"
 	echo -e "║         ${BLUE}Podkop Manager${NC}        ║"
 	echo -e "╚═══════════════════════════════╝"
-	echo -e "                ${DGRAY}by StressOzz v2.6${NC}"
+	echo -e "                ${DGRAY}by StressOzz v2.7${NC}"
 
 
 	echo -e "${MAGENTA}--- Podkop ---${NC}"
