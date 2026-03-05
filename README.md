@@ -1,4 +1,4 @@
-<h1 align="center">🧩 Podkop Manager</h1>
+<h1 align="center">Podkop Manager</h1>
 
 <p align="center">
   <b>Многофункциональный установщик, менеджер и интегратор для OpenWRT.</b><br>
@@ -12,36 +12,9 @@
 > [!WARNING]
 > Все настройки Podkop будут сброшены !
 
-
 ---
 
-## ⚙️ Возможности
-
-- 🔹 Проверка актуальных версий ByeDPI и Podkop через GitHub API  
-- 🔹 Установка / обновление / удаление ByeDPI  
-- 🔹 Установка / обновление / удаление Podkop  
-- 🔹 Полная интеграция ByeDPI → Podkop (с автонастройкой DNS и стратегией)  
-- 🔹 Изменение стратегии ByeDPI прямо из меню  
-- 🔹 Автоматическая установка `curl` при необходимости  
-- 🔹 Автоматическая очистка временных файлов  
-- 🔹 Проверка места, DNS и версий sing-box  
-- 🔹 Цветное интерактивное меню
-- 🔹 Установка AmneziaWG + интерфейс
-- 🔹 Интеграция AmneziaWG в Podkop
----
-
-## 🧱 Совместимость
-
-| Компонент | Рекомендовано |
-|------------|----------------|
-| **OpenWRT** | 24+  |
-| **ByeDPI** | Последняя из [DPITrickster/ByeDPI-OpenWrt](https://github.com/DPITrickster/ByeDPI-OpenWrt/releases) |
-| **Podkop** | Последняя из [itdoginfo/podkop](https://github.com/itdoginfo/podkop/releases) |
-| **sing-box** | 1.12.4+ |
-
----
-
-## 🧩 Запуск менеджера
+## Запуск менеджера
 Скрипт который запускает менеджер
 ```
 sh <(wget -O - https://raw.githubusercontent.com/StressOzz/Podkop-Manager/main/Podkop-Manager.sh)
@@ -49,8 +22,7 @@ sh <(wget -O - https://raw.githubusercontent.com/StressOzz/Podkop-Manager/main/P
 
 ### Возможна так же [Ручная установка](readme.hand.md)
 
-## 🔧 Основные функции
-
+## Основные функции
 
 ### 1) Установить Podkop
 Устанавливает последнию версию Podkop
@@ -73,10 +45,11 @@ sh <(wget -O - https://raw.githubusercontent.com/StressOzz/Podkop-Manager/main/P
 ### 0) Перезагрузить устройство
 Reboot
 
-
-## 🧠 Советы по использованию
+## Советы по использованию
 
 - После первой интеграции ByeDPI обязательно перезагрузите роутер
+
+- Необходимо создать интерфейс в **Network → Interfaces → Add new interface... → Name: AWG → Protocol: AmneziaWG VPN → Create interface**
 
 - Необходимо загрузить конфиг Amnezia в **Network → Interfaces → AWG → Edit → Load configuration…**
 
@@ -88,7 +61,6 @@ Reboot
 
 - Всё что связанно с **Podkop** можно прочитать в [Документация](https://podkop.net/)
 
-- Необходимо загрузить конфиг Amnezia в **Network → Interfaces → AWG → Edit → Load configuration…**
 
 ---
 [<img width="190" height="175" alt="donate-button-click-donation-charity-600nw-2339825981" src="https://github.com/user-attachments/assets/2999757b-fbf3-4149-bf6c-48bf3e241529" />](https://github.com/StressOzz#-поддержать-проект)
