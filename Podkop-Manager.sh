@@ -12,14 +12,18 @@ NC="\033[0m"
 BLUE="\033[0;34m"
 DGRAY="\033[38;5;244m"
 
-WORKDIR="/tmp/byedpi"
+tmpDIR="/tmp/PodkopManager"
+rm -rf "$tmpDIR"
+mkdir -p "$tmpDIR"
 
 PODKOP_LATEST_VER="0.7.14"
 
 BYEDPI_VER="0.17.3"
 BYEDPI_LATEST_VER="$BYEDPI_VER"
 
-BYEDPI_ARCH="$LOCAL_ARCH"
+IF_NAME="AWG"
+PROTO="amneziawg"
+DEV_NAME="amneziawg0"
 
 if command -v apk >/dev/null 2>&1; then
 PKG_IS_APK=1
@@ -38,7 +42,7 @@ pkg_remove() { local pkg_name="$1"; if [ "$PKG_IS_APK" -eq 1 ]; then apk del "$p
 # ==========================================
 install_AWG() {
 
-echo -e "\n${MAGENTA}Устанавливаем AWG${NC}"
+echo -e "\n${MAGENTA}Устанавливаем AWG и интерфейс AWG${NC}"
 
 VERSION=$(ubus call system board | jsonfilter -e '@.release.version' | tr -d '\n')
 MAJOR_VERSION=$(echo "$VERSION" | cut -d '.' -f1)
@@ -53,8 +57,6 @@ TARGET=$(ubus call system board | jsonfilter -e '@.release.target' | cut -d '/' 
 SUBTARGET=$(ubus call system board | jsonfilter -e '@.release.target' | cut -d '/' -f2)
 
 BASE_URL="https://github.com/Slava-Shchipunov/awg-openwrt/releases/download/"
-AWG_DIR="/tmp/amneziawg"
-mkdir -p "$AWG_DIR"
 
 install_pkg() {
 local pkgname=$1
@@ -63,9 +65,9 @@ local url="${BASE_URL}v${VERSION}/${filename}"
 
 echo -e "${CYAN}Скачиваем:${NC} $filename"
 
-if wget -O "$AWG_DIR/$filename" "$url" >/dev/null 2>&1; then
+if wget -O "$tmpDIR/$filename" "$url" >/dev/null 2>&1; then
 echo -e "${CYAN}Устанавливаем:${NC} $pkgname"
-if ! $INSTALL_CMD "$AWG_DIR/$filename" >/dev/null 2>&1; then
+if ! $INSTALL_CMD "$tmpDIR/$filename" >/dev/null 2>&1; then
 echo -e "\n${RED}Ошибка установки $pkgname!${NC}"
 PAUSE
 return 1
@@ -103,15 +105,23 @@ install_pkg "amneziawg-tools"
 install_pkg "luci-proto-amneziawg"
 install_pkg "luci-i18n-amneziawg-ru"
 
-rm -rf "$AWG_DIR"
+echo -e "${CYAN}Создаем интерфейс AWG${NC}"
+
+if uci show network.$IF_NAME >/dev/null 2>&1; then
+echo -e "${RED}Интерфейс уже существует!${NC}"
+else
+uci set network.$IF_NAME=interface
+uci set network.$IF_NAME.proto=$PROTO
+uci set network.$IF_NAME.device=$DEV_NAME
+uci commit network
+fi
 
 echo -e "${YELLOW}Перезапускаем сеть! Подождите...${NC}"
 /etc/init.d/network restart >/dev/null 2>&1
 sleep 5
 
-echo -e "\nAmneziaWG ${GREEN}установлен!${NC}\n"
-echo -e "${YELLOW}Необходимо создать интерфейс в LuCI:${NC}\nNetwork ${GREEN}→${NC} Interfaces ${GREEN}→${NC} Add new interface… ${GREEN}→${NC} Name:AWG ${GREEN}→${NC} Protocol:AmneziaWG VPN ${GREEN}→${NC} Create interface${NC}"
-echo -e "${YELLOW}Необходимо загрузить конфиг в интерфейс AWG в LuCI:${NC}\nNetwork ${GREEN}→${NC} Interfaces ${GREEN}→${NC} AWG ${GREEN}→${NC} Edit ${GREEN}→${NC} Load configuration…${NC}"
+echo -e "\nAWG ${GREEN}и${NC} интерфейс AWG ${GREEN}установлены!${NC}\n"
+echo -e "${YELLOW}Необходимо в LuCI загрузить конфиг в интерфейс AWG:${NC}\nNetwork ${GREEN}→${NC} Interfaces ${GREEN}→${NC} AWG ${GREEN}→${NC} Edit ${GREEN}→${NC} Load configuration…${NC}"
 PAUSE
 }
 
@@ -163,8 +173,7 @@ podkop list_update >/dev/null 2>&1
 echo -e "${CYAN}Перезапускаем сервис${NC}"
 podkop restart >/dev/null 2>&1
 echo -e "AWG ${GREEN}интегрирован в ${NC}Podkop${GREEN}!${NC}\n"
-echo -e "${YELLOW}Необходимо создать интерфейс в LuCI:${NC}\nNetwork ${GREEN}→${NC} Interfaces ${GREEN}→${NC} Add new interface… ${GREEN}→${NC} Name:AWG ${GREEN}→${NC} Protocol:AmneziaWG VPN ${GREEN}→${NC} Create interface${NC}"
-echo -e "${YELLOW}Необходимо загрузить конфиг в интерфейс AWG в LuCI:${NC}\nNetwork ${GREEN}→${NC} Interfaces ${GREEN}→${NC} AWG ${GREEN}→${NC} Edit ${GREEN}→${NC} Load configuration…${NC}"
+echo -e "${YELLOW}Необходимо в LuCI загрузить конфиг в интерфейс AWG:${NC}\nNetwork ${GREEN}→${NC} Interfaces ${GREEN}→${NC} AWG ${GREEN}→${NC} Edit ${GREEN}→${NC} Load configuration…${NC}"
 PAUSE
 }
 
@@ -238,8 +247,7 @@ BYEDPI_URL="https://github.com/DPITrickster/ByeDPI-OpenWrt/releases/download/${R
 echo -e "${GREEN}Архитектура: ${NC}$LOCAL_ARCH${NC}"
 echo -e "${CYAN}Скачиваем ${NC}$BYEDPI_FILE${NC}"
 
-mkdir -p "$WORKDIR"
-cd "$WORKDIR" || return
+cd "$tmpDIR" || return
 
 wget -q -U "Mozilla/5.0" -O "$BYEDPI_FILE" "$BYEDPI_URL" || {
 echo -e "${RED}Ошибка загрузки ${NC}$BYEDPI_FILE"
@@ -256,8 +264,6 @@ echo -e "${GREEN}Пакет установлен!${NC}"
 else
 echo -e "${RED}Ошибка установки пакета${NC}"
 fi
-
-rm -rf "$WORKDIR"
 
 if [ -f /etc/init.d/byedpi ]; then
 /etc/init.d/byedpi enable >/dev/null 2>&1
@@ -293,21 +299,9 @@ install_podkop() {
 echo -e "\n${MAGENTA}Установка Podkop${NC}"
 
 REPO="https://api.github.com/repos/itdoginfo/podkop/releases/latest"
-DOWNLOAD_DIR="/tmp/podkop"
 
 PKG_IS_APK=0
 command -v apk >/dev/null 2>&1 && PKG_IS_APK=1
-
-rm -rf "$DOWNLOAD_DIR"
-mkdir -p "$DOWNLOAD_DIR"
-
-msg() {
-if [ -n "$2" ]; then
-printf "\033[32;1m%s \033[37;1m%s\033[0m\n" "$1" "$2"
-else
-printf "\033[32;1m%s\033[0m\n" "$1"
-fi
-}
 
 pkg_is_installed () {
 local pkg_name="$1"
@@ -320,7 +314,7 @@ fi
 
 pkg_remove() {
 local pkg_name="$1"
-msg "Удаляем" "$pkg_name"
+echo -e "${CYAN}Удаляем ${NC}$pkg_name"
 if [ "$PKG_IS_APK" -eq 1 ]; then
 apk del "$pkg_name" >/dev/null 2>&1
 else
@@ -329,7 +323,7 @@ fi
 }
 
 pkg_list_update() {
-msg "Обновляем список пакетов"
+echo -e "${CYAN}Обновляем список пакетов${NC}"
 if [ "$PKG_IS_APK" -eq 1 ]; then
 apk update >/dev/null 2>&1
 else
@@ -339,7 +333,7 @@ fi
 
 pkg_install() {
 local pkg_file="$1"
-msg "Устанавливаем" "$(basename "$pkg_file")"
+echo -e "${CYAN}Устанавливаем ${NC}$(basename "$pkg_file")"
 if [ "$PKG_IS_APK" -eq 1 ]; then
 apk add --allow-untrusted "$pkg_file" >/dev/null 2>&1
 else
@@ -352,20 +346,20 @@ AVAILABLE_SPACE=$(df /overlay | awk 'NR==2 {print $4}')
 REQUIRED_SPACE=26000
 
 [ "$AVAILABLE_SPACE" -lt "$REQUIRED_SPACE" ] && {
-msg "Недостаточно свободного места"
+echo -e "${RED}Недостаточно свободного места!${NC}"
 PAUSE
 return
 }
 
 nslookup google.com >/dev/null 2>&1 || {
-msg "DNS не работает"
+echo -e "${RED}DNS не работает!${NC}"
 PAUSE
 return
 }
 
 
 if pkg_is_installed https-dns-proxy; then
-msg "Обнаружен конфликтный пакет" "https-dns-proxy. Удаляем..."
+echo -e "${RED}Обнаружен конфликтный пакет ${NC}https-dns-proxy${RED}. Удаляем...${NC}"
 pkg_remove luci-app-https-dns-proxy
 pkg_remove https-dns-proxy
 pkg_remove luci-i18n-https-dns-proxy*
@@ -375,7 +369,7 @@ if pkg_is_installed "^sing-box"; then
 sing_box_version=$(sing-box version | head -n 1 | awk '{print $3}')
 required_version="1.12.4"
 if [ "$(echo -e "$sing_box_version\n$required_version" | sort -V | head -n 1)" != "$required_version" ]; then
-msg "sing-box устарел. Удаляем..."
+echo -e "sing-box ${RED}устарел. Удаляем...${NC}"
 service podkop stop >/dev/null 2>&1
 pkg_remove sing-box
 fi
@@ -384,7 +378,7 @@ fi
 /usr/sbin/ntpd -q -p 194.190.168.1 -p 216.239.35.0 -p 216.239.35.4 -p 162.159.200.1 -p 162.159.200.123 >/dev/null 2>&1
 
 pkg_list_update || {
-msg "Не удалось обновить список пакетов"
+echo -e "${RED}Не удалось обновить список пакетов!${NC}"
 PAUSE
 return
 }
@@ -399,39 +393,37 @@ download_success=0
 urls=$(wget -qO- "$REPO" 2>/dev/null | grep -o "$grep_url_pattern")
 for url in $urls; do
 filename=$(basename "$url")
-filepath="$DOWNLOAD_DIR/$filename"
-msg "Скачиваем" "$filename"
+filepath="$tmpDIR/$filename"
+echo -e "${CYAN}Скачиваем ${NC}$filename"
 if wget -q -O "$filepath" "$url" >/dev/null 2>&1 && [ -s "$filepath" ]; then
 download_success=1
 else
-msg "Ошибка скачивания" "$filename"
+echo -e "${RED}Ошибка скачивания ${NC}$filename"
 fi
 done
 
 [ $download_success -eq 0 ] && {
-msg "Нет успешно скачанных пакетов"
+echo -e "${RED}Нет успешно скачанных пакетов${NC}"
 PAUSE
 return
 }
 
 for pkg in podkop luci-app-podkop; do
-file=$(ls "$DOWNLOAD_DIR" | grep "^$pkg" | head -n 1)
-[ -n "$file" ] && pkg_install "$DOWNLOAD_DIR/$file"
+file=$(ls "$tmpDIR" | grep "^$pkg" | head -n 1)
+[ -n "$file" ] && pkg_install "$tmpDIR/$file"
 done
 
-ru=$(ls "$DOWNLOAD_DIR" | grep "luci-i18n-podkop-ru" | head -n 1)
+ru=$(ls "$tmpDIR" | grep "luci-i18n-podkop-ru" | head -n 1)
 if [ -n "$ru" ]; then
 if pkg_is_installed luci-i18n-podkop-ru; then
-msg "Обновляем русский язык" "$ru"
+echo -e "${CYAN}Обновляем русский язык ${NC}$ru"
 pkg_remove luci-i18n-podkop* >/dev/null 2>&1
-pkg_install "$DOWNLOAD_DIR/$ru"
+pkg_install "$tmpDIR/$ru"
 else
-pkg_install "$DOWNLOAD_DIR/$ru"
+pkg_install "$tmpDIR/$ru"
 
 fi
 fi
-
-rm -rf "$DOWNLOAD_DIR"
 
 echo -e "Podkop ${GREEN}установлен!${NC}"
 PAUSE
@@ -571,14 +563,25 @@ PAUSE
 # uninstall_AWG
 # ==========================================
 uninstall_AWG() {
-echo -e "\n${MAGENTA}Удаление AWG${NC}"
+echo -e "\n${MAGENTA}Удаление AWG и интерфейс AWG${NC}"
 
 pkg_remove luci-i18n-amneziawg-ru
 pkg_remove luci-proto-amneziawg
 pkg_remove amneziawg-tools
 pkg_remove kmod-amneziawg
 
-echo -e "AWG ${GREEN}удалён!${NC}"
+uci delete network.AWG
+uci commit network
+
+for peer in $(uci show network | grep "interface='AWG'" | cut -d. -f2); do
+    uci delete network.$peer
+done
+uci commit network
+echo -e "${${CYAN}}Удаляем ${NC}интерфейс AWG"
+echo -e "${YELLOW}Перезапускаем сеть! Подождите...${NC}"
+/etc/init.d/network restart
+
+echo -e "AWG ${GREEN}и${NC} интерфейс AWG ${GREEN}удалены!${NC}"
 PAUSE
 }
 
@@ -615,6 +618,12 @@ echo -e "${YELLOW}AWG: ${GREEN}установлен${NC}"
 else
 echo -e "${YELLOW}AWG: ${RED}не установлен${NC}"
 fi
+if uci -q get network.AWG >/dev/null; then
+    echo -e "${YELLOW}Интерфейс AWG: ${GREEN}установлен${NC}"
+else
+    echo -e "${YELLOW}Интерфейс AWG: ${RED}не установлен${NC}"
+fi
+
 
 echo -e "\n${CYAN}1) ${GREEN}Установить ${NC}Podkop"
 echo -e "${CYAN}2) ${GREEN}Удалить ${NC}Podkop"
@@ -622,8 +631,8 @@ echo -e "${CYAN}3) ${GREEN}Установить ${NC}ByeDPI"
 echo -e "${CYAN}4) ${GREEN}Удалить ${NC}ByeDPI"
 echo -e "${CYAN}5) ${GREEN}Интегрировать ${NC}ByeDPI ${GREEN}в ${NC}Podkop"
 echo -e "${CYAN}6) ${GREEN}Изменить стратегию ${NC}ByeDPI"
-echo -e "${CYAN}7) ${GREEN}Установить ${NC}AWG"
-echo -e "${CYAN}8) ${GREEN}Удалить ${NC}AWG"
+echo -e "${CYAN}7) ${GREEN}Установить ${NC}AWG ${GREEN}и${NC} интерфейс AWG"
+echo -e "${CYAN}8) ${GREEN}Удалить ${NC}AWG ${GREEN}и${NC} интерфейс AWG"
 echo -e "${CYAN}9) ${GREEN}Интегрировать ${NC}AWG ${GREEN}в ${NC}Podkop"
 echo -e "${CYAN}0) ${GREEN}Перезагрузить устройство${NC}"
 echo -e "${CYAN}Enter) ${GREEN}Выход${NC}"
