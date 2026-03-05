@@ -153,7 +153,6 @@ list community_lists 'russia_inside'
 list community_lists 'hodca'
 EOF
 
-echo -e "AWG ${GREEN}интегрирован в ${NC}Podkop${NC}"
 echo -e "${CYAN}Запускаем ${NC}Podkop${NC}"
 podkop enable >/dev/null 2>&1
 echo -e "${CYAN}Применяем конфигурацию${NC}"
@@ -163,7 +162,7 @@ echo -e "${CYAN}Обновляем списки${NC}"
 podkop list_update >/dev/null 2>&1
 echo -e "${CYAN}Перезапускаем сервис${NC}"
 podkop restart >/dev/null 2>&1
-echo -e "Podkop ${GREEN}готов к работе!${NC}\n"
+echo -e "AWG ${GREEN}интегрирован в ${NC}Podkop${GREEN}!${NC}\n"
 echo -e "${YELLOW}Необходимо создать интерфейс в LuCI:${NC}\nNetwork ${GREEN}→${NC} Interfaces ${GREEN}→${NC} Add new interface… ${GREEN}→${NC} Name:AWG ${GREEN}→${NC} Protocol:AmneziaWG VPN ${GREEN}→${NC} Create interface${NC}"
 echo -e "${YELLOW}Необходимо загрузить конфиг в интерфейс AWG в LuCI:${NC}\nNetwork ${GREEN}→${NC} Interfaces ${GREEN}→${NC} AWG ${GREEN}→${NC} Edit ${GREEN}→${NC} Load configuration…${NC}"
 PAUSE
@@ -506,9 +505,6 @@ echo -e "${CYAN}Перезапускаем сервис${NC}"
 podkop restart >/dev/null 2>&1
 echo -e "${CYAN}Обновляем списки${NC}"
 podkop list_update >/dev/null 2>&1
-
-echo -e "Podkop ${GREEN}готов к работе!${NC}"
-
 echo -e "ByeDPI ${GREEN}интегрирован в ${NC}Podkop${GREEN}!${NC}"
 echo -ne "\nНужно ${RED}обязательно${NC} перезагрузить роутер!\nПерезагрузить сейчас? [y/N]: "
 read REBOOT_CHOICE
