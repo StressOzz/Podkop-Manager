@@ -241,7 +241,7 @@ echo -e "\n${MAGENTA}Установка ByeDPI${NC}"
 if command -v apk >/dev/null 2>&1; then
 OPENWRT_VER="25"
 PKG_EXT="apk"
-RELEASE_TAG="v${BYEDPI_VER}-v25.12.0"
+RELEASE_TAG="v${BYEDPI_VER}-25.12"
 INSTALL_CMD="apk add --allow-untrusted"
 else
 OPENWRT_VER="24"
