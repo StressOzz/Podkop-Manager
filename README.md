@@ -1,5 +1,17 @@
 <h1 align="center">Podkop Manager</h1>
 
+<div align="center">
+
+![Platform](https://img.shields.io/badge/Platform-OpenWrt-orange)
+![Architecture](https://img.shields.io/badge/Architecture-All%20(OpenWrt)-yellow)
+![Script](https://img.shields.io/badge/Script-sh-informational)
+![Status](https://img.shields.io/badge/Status-Active-success)
+![Community](https://img.shields.io/badge/Community-Enabled-green)
+[![Views](https://views.whatilearened.today/views/github/StressOzz/Podkop-Manager.svg)](https://github.com/StressOzz/Podkop-Manager)
+![GitHub last commit](https://img.shields.io/github/last-commit/StressOzz/Zapret-Manager)
+
+</div>
+
 <p align="center">
   <b>Многофункциональный установщик, менеджер и интегратор для OpenWRT.</b><br>
     <b>Обеспечивает обход DPI на уровне роутера, интеграцию прокси с фильтрацией трафика,</b><br>
