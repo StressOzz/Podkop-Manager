@@ -17,8 +17,13 @@
     <b>Обеспечивает обход DPI на уровне роутера, интеграцию прокси с фильтрацией трафика,</b><br>
      <b> стабильную маршрутизацию YouTube, Cloudflare, Госуслуг и др.</b><br>
 
-
 > [!IMPORTANT]
+> При возникновении проблем с запуском скрипта или его функций выполните в **SSH** следующую команду:
+> ```
+> git="githubusercontent.com"; printf "#$git\n185.199.109.133 raw.$git release-assets.$git\n185.199.108.133 private-user-images.$git\n" >> /etc/hosts; /etc/init.d/dnsmasq restart >/dev/null 2>&1; echo -e "\n\033[0;32mOK\n\033[0m"
+> ```
+
+> [!NOTE]
 > Рекомендуется устанавливать на "чистый" роутер !
 
 > [!WARNING]
