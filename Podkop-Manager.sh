@@ -453,7 +453,7 @@ echo -e "${CYAN}Перезапускаем ${NC}dnsmasq"
 
 echo -e "${CYAN}Меняем стратегию ${NC}ByeDPI${CYAN} на рабочую${NC}"
 if [ -f /etc/config/byedpi ]; then
-sed -i "s|option cmd_opts .*| option cmd_opts '-o2 --auto=t,r,a,s -d2'|" /etc/config/byedpi
+sed -i "s|option cmd_opts .*| option cmd_opts '-o125+s -T3 -At --tlsrec 1+s'|" /etc/config/byedpi
 fi
 echo -e "${CYAN}Меняем конфигурацию в ${NC}Podkop"
 cat <<EOF >/etc/config/podkop
